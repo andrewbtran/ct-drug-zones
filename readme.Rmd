@@ -1,0 +1,45 @@
+---
+title: "Analysis of school drug zone arrests in Connecticut"
+author: "Andrew Ba Tran"
+date: "May 29, 2015"
+output: html_document
+---
+
+Biggest finding goes here. according to data from the Connecticut Judicial Branch.
+```{r kable}
+library(knitr)
+raw <- read.csv("sentences.csv")
+raw$RaceOf <- paste(raw$Race, raw$Hispanic, sep="")
+index <- c("", "A", "B", "BY", "C", "CY", "HY")
+values <- c("Unlisted", "Asian", "Black", "Hispanic", "Caucasian", "Hispanic", "Hispanic")
+raw$RaceOfConvicted <- values[match(raw$RaceOf, index)]
+race_table <- data.frame(table(raw$RaceOfConvicted))
+colnames(race_table) <- c("Race", "Convictions")
+race_table$Percent <- (race_table$Convictions/sum(race_table$Convictions)*100)
+race_table$Percent <- round(race_table$Percent, digits=2)
+kable(race_table)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+
+You can also embed plots, for example:
+
+```{r, echo=FALSE}
+plot(cars)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

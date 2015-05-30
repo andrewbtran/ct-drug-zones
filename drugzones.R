@@ -1,0 +1,166 @@
+require(lubridate)
+
+#raw <- read.csv("drugsentencing.csv")
+
+raw <- read.csv("sentences.csv")
+
+#Assigning race
+raw$RaceOf <- paste(raw$Race, raw$Hispanic, sep="")
+index <- c("", "A", "B", "BY", "C", "CY", "HY")
+values <- c("Unlisted", "Asian", "Black", "Hispanic", "Caucasian", "Hispanic", "Hispanic")
+raw$RaceOfConvicted <- values[match(raw$RaceOf, index)]
+
+#Finding race stats overall
+race_table <- data.frame(table(raw$RaceOfConvicted))
+colnames(race_table) <- c("Race", "Convictions")
+race_table$Percent <- (race_table$Convictions/sum(race_table$Convictions)*100)
+race_table$Percent <- round(race_table$percent, digits=2)
+
+#Cleaning up the dates
+raw$Date <- mdy(raw$Sentenced)
+raw$Year <- year(raw$Date)
+
+#Arrests by year (Total)
+year_arrests <- data.frame(table(raw$Year))
+colnames(year_arrests) <- c("Year", "Total.Convictions")
+year_arrests$Year <- as.numeric(year_arrests$Year)
+plot(main="Total Convictions", year_arrests, type="o", col="blue")
+
+#Arrests by year by race
+year_convictions_race <- table(raw$Year, raw$RaceOfConvicted)
+#write.csv(year_convictions_race, "racetally.csv")
+year_convictions_race <- data.frame(year_convictions_race)
+colnames(year_convictions_race) <- c("Year", "Race", "Convictions")
+plot(year_convictions_race)
+
+
+
+# Subset based on Finding results
+
+
+
+
+FindingGuilty <- subset(raw, Finding=="Guilty")
+FindingDismiss <- subset(raw, Finding=="Dismiss")
+FindingNolle <- subset(raw, Finding=="Nolle")
+
+table(FindingGuilty$Race)
+table(FindingDismiss$Race)
+table(FindingNolle$Race)
+
+tapply(raw$Effective.Sentence, raw$Race, mean)
+tapply(raw$Effective.Sentence, raw$Race, median)
+
+raw0 <- subset(raw, Effective.Sentence!=0)
+tapply(raw0$Effective.Sentence, raw0$Race, mean)
+tapply(raw0$Effective.Sentence, raw0$Race, median)
+
+Asians <- subset(raw, Race=="Asian")
+
+
+mean(testvec[testvec != 0]) 
+
+table(raw$Offense.Town, raw$Race)
+table(FindingGuilty$Offense.Town, FindingGuilty$Race)
+
+
+table(FindingGuilty$Offense.Town, FindingGuilty$Race)
+table(FindingDismiss$Offense.Town, FindingDismiss$Race)
+table(FindingNolle$Offense.Town, FindingNolle$Race)
+
+
+#dates
+
+raw$Finding.Date.Date <- dmy(raw$Finding.Date)
+raw$D.O.B.Date <- dmy(raw$D.O.B.)
+
+foo <- function(x, year=1968){
+  m <- year(x) %% 100
+  year(x) <- ifelse(m > year %% 100, 1900+m, 2000+m)
+  x
+}
+
+raw$Interval <- interval(raw$Finding.Date.Date, raw$D.O.B.Date)
+
+
+raw$default.inteval <- interval(raw$D.O.B.Date, raw$default)
+
+raw$age <- raw$Interval/eyears(1)
+
+raw$age.all <- abs(raw$age.all)
+
+raw$age.all <- raw$default.inteval/eyears(1)
+
+
+tapply(raw$age.all, raw$Race, mean,na.rm=T)
+
+tapply(raw$age.all, raw$Race, median,na.rm=T)
+
+tapply(FindingGuilty$age.all, FindingGuilty$Race, median,na.rm=T)
+tapply(FindingGuilty$age.all, FindingGuilty$Race, mean,na.rm=T)
+
+table(raw$Original.Statute)
+
+statuteA <- subset(raw, Original.Statute=="21a-277(a)" | 
+                     Original.Statute=="21a-277(a)+" | 
+                     Original.Statute=="")
+statuteC <- subset(raw, )
+
+#ok new arrests
+
+y2011 <- read.csv("arrests2011.csv")
+
+BigTowns <- subset(y2011, TX_OFFENSE_TOWN_DESC=="HARTFORD" | 
+                     TX_OFFENSE_TOWN_DESC=="BRIDGEPORT" | 
+                     TX_OFFENSE_TOWN_DESC=="NEW HAVEN" | 
+                     TX_OFFENSE_TOWN_DESC=="WEST HAVEN" | 
+                     TX_OFFENSE_TOWN_DESC=="WATERBURY" | 
+                     TX_OFFENSE_TOWN_DESC=="NORWALK" | 
+                     TX_OFFENSE_TOWN_DESC=="ANSONIA" | 
+                     TX_OFFENSE_TOWN_DESC=="STAMFORD" | 
+                     TX_OFFENSE_TOWN_DESC=="NEW BRITAIN")
+
+y2011 <- subset(y2011, CD_STATUTE_ID_VALUE!="21a-267(c)")
+
+y2011b <- subset(y2011, CD_STATUTE_ID_VALUE=="21a-278a(b)")
+y2011c <- subset(y2011, CD_STATUTE_ID_VALUE=="21a-267(c)")
+y2011d <- subset(y2011, CD_STATUTE_ID_VALUE=="21a-279(d)")
+
+write.csv(table(y2011$RACE), "race2011.csv")
+write.csv(table(y2011$RACE2), "race2011-2.csv")
+
+write.csv(table(y2011b$RACE2), "race2011b-2.csv")
+write.csv(table(y2011c$RACE2), "race2011c-2.csv")
+write.csv(table(y2011d$RACE2), "race2011d-2.csv")
+
+write.csv(table(BigTowns$TX_OFFENSE_TOWN_DESC, BigTowns$RACE2), "BigRaceTowns.csv")
+BigTownsb <- subset(BigTowns, CD_STATUTE_ID_VALUE=="21a-278a(b)")
+BigTownsc <- subset(BigTowns, CD_STATUTE_ID_VALUE=="21a-267(c)")
+BigTownsd <- subset(BigTowns, CD_STATUTE_ID_VALUE=="21a-279(d)")
+
+write.csv(table(BigTownsb$TX_OFFENSE_TOWN_DESC, BigTownsb$RACE2), "BT2011b-2.csv")
+write.csv(table(BigTownsc$TX_OFFENSE_TOWN_DESC, BigTownsc$RACE2), "BT2011c-2.csv")
+write.csv(table(BigTownsd$TX_OFFENSE_TOWN_DESC, BigTownsd$RACE2), "BT2011d-2.csv")
+
+# ok, circling back to 2008...
+
+big2 <- subset(raw, Original.Statute=="21a-278(b)" |
+                 Original.Statute=="21a-278(b)*" | 
+                 Original.Statute=="21a-278(b)*+" |                  
+                 Original.Statute=="21a-278(b)+" | 
+                 Original.Statute=="21a-279(d)"
+                 )
+write.csv(big2, "big2.csv")
+big2 <- read.csv("big2.csv")
+write.csv(table(big2$Race), "race2008.csv")
+write.csv(table(big2$Original.Statute, big2$Race), "BigRaceTowns2008.csv")
+
+big2b <- subset(big2, Original.Statute=="21a-278(b)")
+big2d <- subset(big2, Original.Statute=="21a-279(d)")
+
+write.csv(table(big2b$Offense.Town, big2b$Race), "bigb.csv")
+
+write.csv(table(big2d$Offense.Town, big2d$Race), "bigd.csv")
+
+
+
