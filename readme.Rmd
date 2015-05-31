@@ -1,18 +1,66 @@
 ---
 title: "Analysis of school drug zone arrests in Connecticut"
 author: "Andrew Ba Tran"
-date: "May 29, 2015"
 output: html_document
 ---
 
-Biggest finding goes here. according to data from the Connecticut Judicial Branch.
-```{r kable}
+```{r, echo=FALSE, results='hide', warning=FALSE, message=FALSE}
+require(lubridate)
+require(stringi)
+require(gtools)
+require(ggplot2)
+require(rgdal)
+require(scales)
+require(ggmap)
+require(dplyr)
+require(Cairo)
+require(gpclib)
+require(maptools)
+gpclibPermit()
+gpclibPermitStatus()
 library(knitr)
+require(tidyr)
 raw <- read.csv("sentences.csv")
+```
+
+This analysis was used for the story on TrendCT.org based on convictions data from the Connecticut Judicial Branch.
+
+Under current law, a conviction of “Simple Possession” of drugs (21a-279(d)) within 1,500 feet of a school or day care center carries a mandatory minimum two year prison term. A conviction of “Possession with Intent to Sell” (21a-278(b)) drugs within 1,500 feet of a school, day care center, or public housing carries a mandatory minimum three year prison term.
+
+Governor Dannel Malloy has proposed Bill 952 to remove mandatory minimums for the possession of drugs (21a-279(d)) because he states that the two year mandatory prison sentence in urban areas "has had an extraordinarily impact" on African-American and Latino communities. Almost all of the area of New Haven, Hartford, Bridgeport and most other densely populated cities int he state are within a "school zone" while the vast majority of suburban towns are not.
+
+Earlier this month Malloy said 64 percent of those charged with drug possession in school zones are minorities, according to the Sentencing Commission. The Connecticut Judicial Branch could only provide raw data on convictions stretching back to 1999. We looked at data for the following conviction charges:
+
+- 21a-267 (c): Delivering / possessing with intent to deliver / manufacturing with intent to deliver drug paraphernalia.
+- 21a-278 (b): Sells / possesses with the intent to sell)1 to another person any controlled substance in or on school / public housing project / licensed child day care center
+- 21a-279 (d): Possession of a controlled substance
+
+****
+#### Before we begin: our data has `r I(nrow(raw))` rows and `r I(ncol(raw))` columns.
+****
+
+## Universal assumptions
+- Some races had an extra indication that the convicted was also Hispanic. 
+```{r, results='asis'}
+hispanic_list <- c("Race", "Hispanic")
+hispanic_table <- raw[,hispanic_list]
+kable(head(hispanic_table))
+```
+
+- Thus if 'Yes' was marked in the Hispanic column, Hispanic overruled the value in the Race column
+
+```{r, results='asis'}
 raw$RaceOf <- paste(raw$Race, raw$Hispanic, sep="")
 index <- c("", "A", "B", "BY", "C", "CY", "HY")
-values <- c("Unlisted", "Asian", "Black", "Hispanic", "Caucasian", "Hispanic", "Hispanic")
+values <- c("Unlisted", "Asian", "Black", "Hispanic", "White", "Hispanic", "Hispanic")
 raw$RaceOfConvicted <- values[match(raw$RaceOf, index)]
+```
+
+****
+
+#### What is the overall racial breakdown of drug convictions (c, b, and d combined) since 1999? 
+
+```{r kable}
 race_table <- data.frame(table(raw$RaceOfConvicted))
 colnames(race_table) <- c("Race", "Convictions")
 race_table$Percent <- (race_table$Convictions/sum(race_table$Convictions)*100)
@@ -20,26 +68,47 @@ race_table$Percent <- round(race_table$Percent, digits=2)
 kable(race_table)
 ```
 
+#### Simplified to white versus non-white
+```{r results='asis', out.width='910px', fig.width=10, fig.height=2, warning=FALSE, message=FALSE, dpi=50}
+white_total <- race_table$Percent[5]
+minority_total <- sum(race_table$Percent) - white_total
+data_versus <- c("White", white_total)
+data_versus <- rbind(data_versus, c("Minority", minority_total))
+colnames(data_versus) <- c("Race", "Percent")
+data_versus <- data.frame(data_versus)
 
-
-
-
-
-
-
-
-
-
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-
-You can also embed plots, for example:
-
-```{r, echo=FALSE}
-plot(cars)
+ggplot(data_versus, aes(x=Race, y=Percent, fill=Race)) +
+  geom_bar(stat='identity') +
+  geom_text(aes(label=Percent), hjust=1) +
+  ylab('Percent of convictions') +
+  xlab(NULL) +
+  theme(
+    axis.ticks.y=element_blank(),
+    axis.text.y=element_blank()
+  ) +
+  coord_flip() +
+  ggtitle('White and minority convictions since 1999')
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+****
+
+#### What is the percent breakdown by specific charge? 
+To simplify, we will refer to 21a-267(c) as Delivering, 21a-278(b) as Selling, and 21a-279(d) as Possessing
+
+```{r results='asis', out.width='910px', fig.width=10, fig.height=2, warning=FALSE, message=FALSE, dpi=50}
+convictions_table <- as.data.frame.matrix(table(raw$RaceOfConvicted, raw$Final.Statute))
+colnames(convictions_table) <- c("Delivering", "Selling", "Possessing")
+kable(convictions_table)
+```
+
+#### As a percent of sentences
+
+```{r results='asis', out.width='910px', fig.width=10, fig.height=2, warning=FALSE, message=FALSE, dpi=50}
+percent_convictions <- round((convictions_table$Delivering/sum(convictions_table$Delivering))*100, digits=2)
+percent_convictions <- data.frame(percent_convictions)
+rownames(percent_convictions) <- c("Asian", "Black", "Hispanic", "Unlisted", "White")
+percent_convictions$Selling <- round((convictions_table$Selling/sum(convictions_table$Selling))*100, digits=2)
+percent_convictions$Possessing <- round((convictions_table$Possessing/sum(convictions_table$Possessing))*100, digits=2)
+colnames(percent_convictions) <- c("Delivering Percent", "Selling Percent", "Possessing Percent")
+kable(percent_convictions)
+```
