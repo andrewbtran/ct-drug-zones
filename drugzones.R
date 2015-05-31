@@ -38,7 +38,69 @@ plot(year_convictions_race)
 # Subset based on Finding results
 
 
+# Subset based on arresting agency
+juris_conv <- data.frame(table(raw$Police.Name))
+colnames(juris_conv) <- c("Department", "Convictions.Total")
+juris_conv <- juris_conv[order(-juris_conv$Convictions.Total),]
 
+# subset out town police departments vs the rest
+towns_only <- juris_conv[grepl("LOCAL POLICE", juris_conv$Department),]
+not_towns <- juris_conv[grep("LOCAL POLICE", juris_conv$Department, invert=TRUE),]
+
+csp_only <- juris_conv[grepl("CSP TROOP", juris_conv$Department),]
+csp_only$Department <- as.character(csp_only$Department)
+csp_only$Department <- gsub("CSP TROOP ", "", csp_only$Department)
+colnames(csp_only) <- c("id", "Convictions")
+
+towns_only$Department <- as.character(towns_only$Department)
+towns_only$Department <- gsub("LOCAL POLICE ", "", towns_only$Department)
+
+
+#OK, let's shapefile it up
+
+require(ggplot2)
+require(rgdal)
+require(scales)
+require(ggmap)
+require(dplyr)
+require(Cairo)
+require(maptools)
+require(gpclib)
+
+#Connecticut State Police 
+tract <- readOGR(dsn="CSPMap", layer="CSPJurisdictions")
+tract <- fortify(tract, region="Troop")
+
+plotData <- left_join(tract, csp_only)
+
+p <- ggplot() +
+  geom_polygon(data = plotData, aes(x=long, y=lat, group=group, 
+                                    fill=Convictions), color = "black", size=0.25) +
+  coord_map() +
+  scale_fill_distiller(palette = "Greens",
+                       breaks = pretty_breaks(n = 10)) +
+  theme_nothing(legend=TRUE) +
+  labs(title="Number of convictions from Connecticut State Troopers", fill="")
+ggsave(p, file="map1.png", width=8, height=4, type="cairo-png")
+
+
+# Town police
+
+towntracts <- readOGR(dsn="townsmap", layer="towns")
+towntracts <- fortify(towntracts, region="NAME10")
+
+colnames(towns_only) <- c("id", "Convictions")
+townData <- left_join(towntracts, towns_only)
+
+townData$Convictions [is.na(townData$Convictions)] <-0
+
+p2 <- ggplot() +
+  geom_polygon(data = townData, aes(x=long, y=lat, group=group, 
+                                    fill=Convictions), color = "black", size=0.25) +
+  coord_map() +
+  labs(title="Number of convictions from city police departments", fill="")
+ggsave(p2, file="map2.png", width=8, height=4, type="cairo-png")
+---
 
 FindingGuilty <- subset(raw, Finding=="Guilty")
 FindingDismiss <- subset(raw, Finding=="Dismiss")
