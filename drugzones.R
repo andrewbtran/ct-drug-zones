@@ -54,18 +54,33 @@ colnames(csp_only) <- c("id", "Convictions")
 
 towns_only$Department <- as.character(towns_only$Department)
 towns_only$Department <- gsub("LOCAL POLICE ", "", towns_only$Department)
+colnames(towns_only) <- c("id", "Convictions")
 
+#bring in town populations
+townpop <- read.csv("townsmap/townpopulation.csv")
+colnames(townpop) <- c("id","Population")
+townpop$id <- toupper(townpop$id)
+
+towns_only <- left_join(townpop, towns_only)
+require(stringi)
+towns_only$Convictions [is.na(towns_only$Convictions)] <-0
+towns_only$id <- stri_trans_general(towns_only$id, id="Title")
+towns_only$Rate <- (towns_only$Convictions/towns_only$Population)*10000
+towns_only$Rate <- round(towns_only$Rate, digits=2)
 
 #OK, let's shapefile it up
-
+require(gtools)
 require(ggplot2)
 require(rgdal)
 require(scales)
 require(ggmap)
 require(dplyr)
 require(Cairo)
-require(maptools)
 require(gpclib)
+require(maptools)
+gpclibPermit()
+gpclibPermitStatus()
+
 
 #Connecticut State Police 
 tract <- readOGR(dsn="CSPMap", layer="CSPJurisdictions")
@@ -84,23 +99,95 @@ p <- ggplot() +
 ggsave(p, file="map1.png", width=8, height=4, type="cairo-png")
 
 
-# Town police
+# Town police (total convictions)
 
 towntracts <- readOGR(dsn="townsmap", layer="towns")
 towntracts <- fortify(towntracts, region="NAME10")
 
-colnames(towns_only) <- c("id", "Convictions")
 townData <- left_join(towntracts, towns_only)
 
-townData$Convictions [is.na(townData$Convictions)] <-0
 
 p2 <- ggplot() +
   geom_polygon(data = townData, aes(x=long, y=lat, group=group, 
-                                    fill=Convictions), color = "black", size=0.25) +
+                                    fill=Convictions), color = "black", size=0.2) +
   coord_map() +
+  scale_fill_distiller(type="seq", palette = "Greens", breaks=pretty_breaks(n=5)) +
+  theme_nothing(legend=TRUE) +
   labs(title="Number of convictions from city police departments", fill="")
 ggsave(p2, file="map2.png", width=8, height=4, type="cairo-png")
+
+# Town police (convictions per 10,000 people)
+
+towntracts <- readOGR(dsn="townsmap", layer="towns")
+towntracts <- fortify(towntracts, region="NAME10")
+
+townData <- left_join(towntracts, towns_only)
+
+
+p2 <- ggplot() +
+  geom_polygon(data = townData, aes(x=long, y=lat, group=group, 
+                                    fill=Rate), color = "black", size=0.2) +
+  coord_map() +
+  scale_fill_distiller(type="seq", palette = "Greens", breaks=pretty_breaks(n=5)) +
+  theme_nothing(legend=TRUE) +
+  labs(title="Convictions from city police departments per 10,000 residents", fill="")
+ggsave(p2, file="map3.png", width=8, height=4, type="cairo-png")
 ---
+  
+# ok, let's look at specific convictions
+  
+table(raw$Final.Statute)
+
+conv_c <- subset(raw, Final.Statute=="21a-267(c)")
+conv_b <- subset(raw, Final.Statute=="21a-278a(b)")
+conv_d <- subset(raw, Final.Statute=="21a-279(d)")
+
+#doing everything above but for each subset now
+
+c_conv <- data.frame(table(conv_c$Year))
+colnames(c_conv) <- c("Year", "Total.Convictions")
+c_conv$Year <- as.numeric(c_conv$Year)
+plot(main="21a-267(c) Convictions", c_conv, type="o", col="blue")
+
+b_conv <- data.frame(table(conv_b$Year))
+colnames(b_conv) <- c("Year", "Total.Convictions")
+b_conv$Year <- as.numeric(b_conv$Year)
+plot(main="21a-278a(b) Convictions", b_conv, type="o", col="blue")
+
+d_conv <- data.frame(table(conv_d$Year))
+colnames(d_conv) <- c("Year", "Total.Convictions")
+d_conv$Year <- as.numeric(d_conv$Year)
+plot(main="21a-279(d) Convictions", d_conv, type="o", col="blue")
+
+#Convictions by race (timeline charts)
+
+c_convictions_race <- table(conv_c$Year, conv_c$RaceOfConvicted)
+c_convictions_race <- data.frame(c_convictions_race)
+colnames(c_convictions_race) <- c("Year", "Race", "Convictions")
+ggplot(c_convictions_race, aes(Year, Convictions, group=Race, colour=Race)) +
+  geom_path(alpha=0.5)
+
+
+b_convictions_race <- table(conv_b$Year, conv_b$RaceOfConvicted)
+b_convictions_race <- data.frame(b_convictions_race)
+colnames(b_convictions_race) <- c("Year", "Race", "Convictions")
+ggplot(b_convictions_race, aes(Year, Convictions, group=Race, colour=Race)) +
+  geom_path(alpha=0.5)
+
+d_convictions_race <- table(conv_d$Year, conv_d$RaceOfConvicted)
+d_convictions_race <- data.frame(d_convictions_race)
+colnames(d_convictions_race) <- c("Year", "Race", "Convictions")
+ggplot(d_convictions_race, aes(Year, Convictions, group=Race, colour=Race)) +
+  geom_path(alpha=0.5)
+
+
+year_convictions_race <- table(raw$Year, raw$RaceOfConvicted)
+#write.csv(year_convictions_race, "racetally.csv")
+year_convictions_race <- data.frame(year_convictions_race)
+colnames(year_convictions_race) <- c("Year", "Race", "Convictions")
+plot(year_convictions_race)
+
+
 
 FindingGuilty <- subset(raw, Finding=="Guilty")
 FindingDismiss <- subset(raw, Finding=="Dismiss")

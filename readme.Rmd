@@ -20,6 +20,7 @@ gpclibPermit()
 gpclibPermitStatus()
 library(knitr)
 require(tidyr)
+require(gridExtra)
 raw <- read.csv("sentences.csv")
 ```
 
@@ -92,7 +93,7 @@ ggplot(data_versus, aes(x=Race, y=Percent, fill=Race)) +
 
 ****
 
-#### What is the percent breakdown by specific charge? 
+#### What is the racial breakdown by specific charge? 
 To simplify, we will refer to 21a-267(c) as Delivering, 21a-278(b) as Selling, and 21a-279(d) as Possessing
 
 ```{r results='asis', out.width='910px', fig.width=10, fig.height=2, warning=FALSE, message=FALSE, dpi=50}
@@ -112,3 +113,74 @@ percent_convictions$Possessing <- round((convictions_table$Possessing/sum(convic
 colnames(percent_convictions) <- c("Delivering Percent", "Selling Percent", "Possessing Percent")
 kable(percent_convictions)
 ```
+
+It looks like convictions for Delivering is almost equal between minorities and whites, but there's a disparity for the other two convictions-- Selling and Possessing.
+
+```{r results='asis', out.width='910px', fig.width=10, fig.height=4, warning=FALSE, message=FALSE, dpi=50}
+white_delivering <- percent_convictions$Delivering[5]
+white_selling <- percent_convictions$Selling[5]
+white_possessing <- percent_convictions$Possessing[5]
+
+minority_delivering <- sum(percent_convictions$Delivering) - white_delivering
+minority_selling <- sum(percent_convictions$Selling) - white_selling
+minority_possessing <- sum(percent_convictions$Possessing) - white_possessing
+
+data_versus_d <- c("White", white_delivering)
+data_versus_d <- rbind(data_versus_d, c("Minority", minority_delivering))
+colnames(data_versus_d) <- c("Race", "Percent")
+data_versus_d <- data.frame(data_versus_d)
+data_versus_d$Percent <- as.numeric(as.character(data_versus_d$Percent))
+
+data_versus_s <- c("White", white_selling)
+data_versus_s <- rbind(data_versus_s, c("Minority", minority_selling))
+colnames(data_versus_s) <- c("Race", "Percent")
+data_versus_s <- data.frame(data_versus_s)
+data_versus_s$Percent <- as.numeric(as.character(data_versus_s$Percent))
+
+data_versus_p <- c("White", white_possessing)
+data_versus_p <- rbind(data_versus_p, c("Minority", minority_possessing))
+colnames(data_versus_p) <- c("Race", "Percent")
+data_versus_p <- data.frame(data_versus_p)
+data_versus_p$Percent <- as.numeric(as.character(data_versus_p$Percent))
+
+
+d_plot <- ggplot(data_versus_d, aes(x=Race, y=Percent, fill=Race)) +
+  geom_bar(stat='identity') +
+  geom_text(aes(label=Percent), vjust=1) +
+  ylab('Percent of convictions') +
+  xlab(NULL) +
+  expand_limits(y=c(0,100)) +
+  theme(
+    axis.ticks.y=element_blank(),
+    axis.text.y=element_blank()
+  ) +
+  ggtitle('Delivering')
+
+s_plot <- ggplot(data_versus_s, aes(x=Race, y=Percent, fill=Race)) +
+  geom_bar(stat='identity') +
+  geom_text(aes(label=Percent), vjust=1) +
+  ylab('Percent of convictions') +
+  xlab(NULL) +
+  expand_limits(y=c(0,100)) +
+  theme(
+    axis.ticks.y=element_blank(),
+    axis.text.y=element_blank()
+  ) +
+  ggtitle('Selling')
+
+p_plot <- ggplot(data_versus_p, aes(x=Race, y=Percent, fill=Race)) +
+  geom_bar(stat='identity') +
+  geom_text(aes(label=Percent), vjust=1) +
+  ylab('Percent of convictions') +
+  xlab(NULL) +
+  expand_limits(y=c(0,100)) +
+  theme(
+    axis.ticks.y=element_blank(),
+    axis.text.y=element_blank()
+  ) +
+  ggtitle('Possessing')
+
+grid.arrange(d_plot, s_plot, p_plot, ncol=3)
+#qplot(Charge, data=convictions_table2, geom="bar", fill=Race)
+```
+
