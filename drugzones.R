@@ -1,4 +1,5 @@
 require(lubridate)
+require(stringi)
 
 #raw <- read.csv("drugsentencing.csv")
 
@@ -62,11 +63,11 @@ colnames(townpop) <- c("id","Population")
 townpop$id <- toupper(townpop$id)
 
 towns_only <- left_join(townpop, towns_only)
-require(stringi)
 towns_only$Convictions [is.na(towns_only$Convictions)] <-0
 towns_only$id <- stri_trans_general(towns_only$id, id="Title")
 towns_only$Rate <- (towns_only$Convictions/towns_only$Population)*10000
 towns_only$Rate <- round(towns_only$Rate, digits=2)
+towns_only <- towns_only[order(-towns_only$Rate),]
 
 #OK, let's shapefile it up
 require(gtools)

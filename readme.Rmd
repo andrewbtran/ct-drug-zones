@@ -15,12 +15,15 @@ require(ggmap)
 require(dplyr)
 require(Cairo)
 require(gpclib)
+require(stringi)
 require(maptools)
-gpclibPermit()
-gpclibPermitStatus()
 library(knitr)
 require(tidyr)
 require(gridExtra)
+gpclibPermit()
+gpclibPermitStatus()
+tract <- readOGR(dsn="CSPMap", layer="CSPJurisdictions")
+towntracts <- readOGR(dsn="townsmap", layer="towns")
 raw <- read.csv("sentences.csv")
 ```
 
@@ -77,7 +80,7 @@ data_versus <- c("White", white_total)
 data_versus <- rbind(data_versus, c("Minority", minority_total))
 colnames(data_versus) <- c("Race", "Percent")
 data_versus <- data.frame(data_versus)
-
+data_versus$Percent <- as.numeric(as.character(data_versus$Percent))
 ggplot(data_versus, aes(x=Race, y=Percent, fill=Race)) +
   geom_bar(stat='identity') +
   geom_text(aes(label=Percent), hjust=1) +
@@ -182,5 +185,77 @@ p_plot <- ggplot(data_versus_p, aes(x=Race, y=Percent, fill=Race)) +
 
 grid.arrange(d_plot, s_plot, p_plot, ncol=3)
 #qplot(Charge, data=convictions_table2, geom="bar", fill=Race)
+```
+
+#### Which town police departments lead to the most convictions?
+
+```{r results='asis'}
+# Subset based on arresting agency
+juris_conv <- data.frame(table(raw$Police.Name))
+colnames(juris_conv) <- c("Department", "Convictions.Total")
+juris_conv <- juris_conv[order(-juris_conv$Convictions.Total),]
+
+# subset out town police departments vs the rest
+towns_only <- juris_conv[grepl("LOCAL POLICE", juris_conv$Department),]
+not_towns <- juris_conv[grep("LOCAL POLICE", juris_conv$Department, invert=TRUE),]
+
+csp_only <- juris_conv[grepl("CSP TROOP", juris_conv$Department),]
+csp_only$Department <- as.character(csp_only$Department)
+csp_only$Department <- gsub("CSP TROOP ", "", csp_only$Department)
+colnames(csp_only) <- c("id", "Convictions")
+
+towns_only$Department <- as.character(towns_only$Department)
+towns_only$Department <- gsub("LOCAL POLICE ", "", towns_only$Department)
+colnames(towns_only) <- c("id", "Convictions")
+ownpop <- read.csv("townsmap/townpopulation.csv")
+colnames(townpop) <- c("id","Population")
+townpop$id <- toupper(townpop$id)
+
+towns_only <- left_join(townpop, towns_only)
+towns_only$Convictions [is.na(towns_only$Convictions)] <-0
+towns_only$id <- stri_trans_general(towns_only$id, id="Title")
+towns_only$Per10kResidents <- (towns_only$Convictions/towns_only$Population)*10000
+towns_only$Per10kResidents <- round(towns_only$Per10kResidents, digits=2)
+towns_only <- towns_only[order(-towns_only$Per10kResidents),]
+kable(head(towns_only,10))
+```
+```{r results='asis', out.width='910px', fig.width=10, fig.height=4, warning=FALSE, message=FALSE, dpi=50}
+towntracts <- fortify(towntracts, region="NAME10")
+townData <- left_join(towntracts, towns_only)
+
+p2 <- ggplot() +
+  geom_polygon(data = townData, aes(x=long, y=lat, group=group, 
+                                    fill=Per10kResidents), color = "black", size=0.2) +
+  coord_map() +
+  scale_fill_distiller(type="seq", palette = "Greens", breaks=pretty_breaks(n=5)) +
+  theme_nothing(legend=TRUE) +
+  labs(title="Convictions from city police departments per 10,000 residents", fill="")
+p2
+```
+
+#### What about non-town police departments?
+```{r results='asis', out.width='910px', fig.width=10, fig.height=4, warning=FALSE, message=FALSE, dpi=50}
+not_towns <- juris_conv[grep("LOCAL POLICE", juris_conv$Department, invert=TRUE),]
+not_towns <- not_towns[order(-not_towns$Convictions),]
+kable(head(not_towns))
+
+csp_only <- juris_conv[grepl("CSP TROOP", juris_conv$Department),]
+csp_only$Department <- as.character(csp_only$Department)
+csp_only$Department <- gsub("CSP TROOP ", "", csp_only$Department)
+colnames(csp_only) <- c("id", "Convictions")
+
+tract <- fortify(tract, region="Troop")
+
+plotData <- left_join(tract, csp_only)
+
+p <- ggplot() +
+  geom_polygon(data = plotData, aes(x=long, y=lat, group=group, 
+                                    fill=Convictions), color = "black", size=0.25) +
+  coord_map() +
+  scale_fill_distiller(palette = "Greens",
+                       breaks = pretty_breaks(n = 10)) +
+  theme_nothing(legend=TRUE) +
+  labs(title="Number of convictions from Connecticut State Troopers", fill="")
+p
 ```
 
