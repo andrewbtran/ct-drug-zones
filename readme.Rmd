@@ -17,9 +17,10 @@ require(Cairo)
 require(gpclib)
 require(stringi)
 require(maptools)
-library(knitr)
+require(knitr)
 require(tidyr)
 require(gridExtra)
+require(reshape)
 gpclibPermit()
 gpclibPermitStatus()
 tract <- readOGR(dsn="CSPMap", layer="CSPJurisdictions")
@@ -310,5 +311,64 @@ p2
 ```
 The numbers shift around, although . Bridgeport and Stamford are not as high on the map. The highest rate of convictions that resulted in a Possession statute was in New Haven with almost two per 10,000 residents.
 
+#### How has convictions evolved over time?
+
+```{r results='asis'}
+raw$Date <- mdy(raw$Sentenced)
+raw$Year <- year(raw$Date)
+
+c_conv <- data.frame(table(conv_c$Year))
+colnames(c_conv) <- c("Year", "C.Convictions")
+c_conv$Year <- as.numeric(as.character(c_conv$Year))
+b_conv <- data.frame(table(conv_b$Year))
+colnames(b_conv) <- c("Year", "B.Convictions")
+b_conv$Year <- as.numeric(as.character(b_conv$Year))
+d_conv <- data.frame(table(conv_d$Year))
+colnames(d_conv) <- c("Year", "D.Convictions")
+d_conv$Year <- as.numeric(as.character(d_conv$Year))
+
+conv_all <- left_join(c_conv, b_conv)
+conv_all <- left_join(conv_all, d_conv)
+
+meltedJoinsByYear <- melt(conv_all, id="Year")
+colnames(meltedJoinsByYear) <- c("Year", "Final.Statute", "Convictions")
+
+ggplot(meltedJoinsByYear, aes(x=Year, y=Convictions, colour=Final.Statute)) +
+  geom_line() +
+  ylab(label="Convictions") +
+  xlab(label="Year") +
+  scale_colour_manual(values=c("blue","red", "green"))
+
+```
+
+#### What's the breakdown for race per year by specific convictions? 
+
+```{r results='asis'}
+
+c_convictions_race <- table(conv_c$Year, conv_c$RaceOfConvicted)
+c_convictions_race <- data.frame(c_convictions_race)
+colnames(c_convictions_race) <- c("Year", "Race", "Convictions")
+ggplot(c_convictions_race, aes(Year, Convictions, group=Race, colour=Race)) +
+  geom_path(alpha=0.5) +
+  ggtitle("Race of those convicted for Delivering by year") +
+  theme_minimal()
+
+
+b_convictions_race <- table(conv_b$Year, conv_b$RaceOfConvicted)
+b_convictions_race <- data.frame(b_convictions_race)
+colnames(b_convictions_race) <- c("Year", "Race", "Convictions")
+ggplot(b_convictions_race, aes(Year, Convictions, group=Race, colour=Race)) +
+  geom_path(alpha=0.5) +
+  ggtitle("Race of those convicted for Selling by year") +
+  theme_minimal()
+
+d_convictions_race <- table(conv_d$Year, conv_d$RaceOfConvicted)
+d_convictions_race <- data.frame(d_convictions_race)
+colnames(d_convictions_race) <- c("Year", "Race", "Convictions")
+ggplot(d_convictions_race, aes(Year, Convictions, group=Race, colour=Race)) +
+  geom_path(alpha=0.5) +
+ggtitle("Race of those convicted for Possession by year") +
+  theme_minimal()
+```
 
 

@@ -79,6 +79,7 @@ require(dplyr)
 require(Cairo)
 require(gpclib)
 require(maptools)
+require(reshape)
 gpclibPermit()
 gpclibPermitStatus()
 
@@ -124,7 +125,6 @@ towntracts <- fortify(towntracts, region="NAME10")
 
 townData <- left_join(towntracts, towns_only)
 
-
 p2 <- ggplot() +
   geom_polygon(data = townData, aes(x=long, y=lat, group=group, 
                                     fill=Rate), color = "black", size=0.2) +
@@ -146,19 +146,27 @@ conv_d <- subset(raw, Final.Statute=="21a-279(d)")
 #doing everything above but for each subset now
 
 c_conv <- data.frame(table(conv_c$Year))
-colnames(c_conv) <- c("Year", "Total.Convictions")
-c_conv$Year <- as.numeric(c_conv$Year)
-plot(main="21a-267(c) Convictions", c_conv, type="o", col="blue")
-
+colnames(c_conv) <- c("Year", "C.Convictions")
+c_conv$Year <- as.numeric(as.character(c_conv$Year))
 b_conv <- data.frame(table(conv_b$Year))
-colnames(b_conv) <- c("Year", "Total.Convictions")
-b_conv$Year <- as.numeric(b_conv$Year)
-plot(main="21a-278a(b) Convictions", b_conv, type="o", col="blue")
-
+colnames(b_conv) <- c("Year", "B.Convictions")
+b_conv$Year <- as.numeric(as.character(b_conv$Year))
 d_conv <- data.frame(table(conv_d$Year))
-colnames(d_conv) <- c("Year", "Total.Convictions")
-d_conv$Year <- as.numeric(d_conv$Year)
-plot(main="21a-279(d) Convictions", d_conv, type="o", col="blue")
+colnames(d_conv) <- c("Year", "D.Convictions")
+d_conv$Year <- as.numeric(as.character(d_conv$Year))
+
+conv_all <- left_join(c_conv, b_conv)
+conv_all <- left_join(conv_all, d_conv)
+
+meltedJoinsByYear <- melt(conv_all, id="Year")
+colnames(meltedJoinsByYear) <- c("Year", "Final.Statute", "Convictions")
+
+ggplot(meltedJoinsByYear, aes(x=Year, y=Convictions, colour=Final.Statute)) +
+  geom_line() +
+  ylab(label="Convictions") +
+  xlab(label="Year") +
+  scale_colour_manual(values=c("blue","red", "green"))
+
 
 #Convictions by race (timeline charts)
 
@@ -166,21 +174,26 @@ c_convictions_race <- table(conv_c$Year, conv_c$RaceOfConvicted)
 c_convictions_race <- data.frame(c_convictions_race)
 colnames(c_convictions_race) <- c("Year", "Race", "Convictions")
 ggplot(c_convictions_race, aes(Year, Convictions, group=Race, colour=Race)) +
-  geom_path(alpha=0.5)
+  geom_path(alpha=0.5) +
+  ggtitle("Race of those convicted for Delivering by year") +
+  theme_minimal()
 
 
 b_convictions_race <- table(conv_b$Year, conv_b$RaceOfConvicted)
 b_convictions_race <- data.frame(b_convictions_race)
 colnames(b_convictions_race) <- c("Year", "Race", "Convictions")
 ggplot(b_convictions_race, aes(Year, Convictions, group=Race, colour=Race)) +
-  geom_path(alpha=0.5)
+  geom_path(alpha=0.5) +
+  ggtitle("Race of those convicted for Selling by year") +
+  theme_minimal()
 
 d_convictions_race <- table(conv_d$Year, conv_d$RaceOfConvicted)
 d_convictions_race <- data.frame(d_convictions_race)
 colnames(d_convictions_race) <- c("Year", "Race", "Convictions")
 ggplot(d_convictions_race, aes(Year, Convictions, group=Race, colour=Race)) +
-  geom_path(alpha=0.5)
-
+  geom_path(alpha=0.5) +
+ggtitle("Race of those convicted for Possession by year") +
+  theme_minimal()
 
 year_convictions_race <- table(raw$Year, raw$RaceOfConvicted)
 #write.csv(year_convictions_race, "racetally.csv")
