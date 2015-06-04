@@ -86,6 +86,7 @@ ggplot(data_versus, aes(x=Race, y=Percent, fill=Race)) +
   geom_text(aes(label=Percent), hjust=1) +
   ylab('Percent of convictions') +
   xlab(NULL) +
+  expand_limits(y=c(0,100)) +
   theme(
     axis.ticks.y=element_blank(),
     axis.text.y=element_blank()
@@ -97,11 +98,11 @@ ggplot(data_versus, aes(x=Race, y=Percent, fill=Race)) +
 ****
 
 #### What is the racial breakdown by specific charge? 
-To simplify, we will refer to 21a-267(c) as Delivering, 21a-278(b) as Selling, and 21a-279(d) as Possessing
+To simplify, we will refer to 21a-267(c) as Delivering, 21a-278(b) as Selling, and 21a-279(d) as Possession
 
 ```{r results='asis', out.width='910px', fig.width=10, fig.height=2, warning=FALSE, message=FALSE, dpi=50}
 convictions_table <- as.data.frame.matrix(table(raw$RaceOfConvicted, raw$Final.Statute))
-colnames(convictions_table) <- c("Delivering", "Selling", "Possessing")
+colnames(convictions_table) <- c("Delivering", "Selling", "Possession")
 kable(convictions_table)
 ```
 
@@ -112,21 +113,21 @@ percent_convictions <- round((convictions_table$Delivering/sum(convictions_table
 percent_convictions <- data.frame(percent_convictions)
 rownames(percent_convictions) <- c("Asian", "Black", "Hispanic", "Unlisted", "White")
 percent_convictions$Selling <- round((convictions_table$Selling/sum(convictions_table$Selling))*100, digits=2)
-percent_convictions$Possessing <- round((convictions_table$Possessing/sum(convictions_table$Possessing))*100, digits=2)
-colnames(percent_convictions) <- c("Delivering Percent", "Selling Percent", "Possessing Percent")
+percent_convictions$Possession <- round((convictions_table$Possession/sum(convictions_table$Possession))*100, digits=2)
+colnames(percent_convictions) <- c("Delivering Percent", "Selling Percent", "Possession Percent")
 kable(percent_convictions)
 ```
 
-It looks like convictions for Delivering is almost equal between minorities and whites, but there's a disparity for the other two convictions-- Selling and Possessing.
+It looks like convictions for Delivering is almost equal between minorities and whites, but there's a disparity for the other two convictions-- Selling and Possession.
 
 ```{r results='asis', out.width='910px', fig.width=10, fig.height=4, warning=FALSE, message=FALSE, dpi=50}
 white_delivering <- percent_convictions$Delivering[5]
 white_selling <- percent_convictions$Selling[5]
-white_possessing <- percent_convictions$Possessing[5]
+white_possession <- percent_convictions$Possession[5]
 
 minority_delivering <- sum(percent_convictions$Delivering) - white_delivering
 minority_selling <- sum(percent_convictions$Selling) - white_selling
-minority_possessing <- sum(percent_convictions$Possessing) - white_possessing
+minority_possession <- sum(percent_convictions$Possession) - white_possession
 
 data_versus_d <- c("White", white_delivering)
 data_versus_d <- rbind(data_versus_d, c("Minority", minority_delivering))
@@ -140,8 +141,8 @@ colnames(data_versus_s) <- c("Race", "Percent")
 data_versus_s <- data.frame(data_versus_s)
 data_versus_s$Percent <- as.numeric(as.character(data_versus_s$Percent))
 
-data_versus_p <- c("White", white_possessing)
-data_versus_p <- rbind(data_versus_p, c("Minority", minority_possessing))
+data_versus_p <- c("White", white_possession)
+data_versus_p <- rbind(data_versus_p, c("Minority", minority_possession))
 colnames(data_versus_p) <- c("Race", "Percent")
 data_versus_p <- data.frame(data_versus_p)
 data_versus_p$Percent <- as.numeric(as.character(data_versus_p$Percent))
@@ -181,7 +182,7 @@ p_plot <- ggplot(data_versus_p, aes(x=Race, y=Percent, fill=Race)) +
     axis.ticks.y=element_blank(),
     axis.text.y=element_blank()
   ) +
-  ggtitle('Possessing')
+  ggtitle('possession')
 
 grid.arrange(d_plot, s_plot, p_plot, ncol=3)
 #qplot(Charge, data=convictions_table2, geom="bar", fill=Race)
@@ -191,7 +192,7 @@ grid.arrange(d_plot, s_plot, p_plot, ncol=3)
 
 ```{r results='asis'}
 # Subset based on arresting agency
-juris_conv <- data.frame(table(raw$Police.Name))
+juris_conv<- data.frame(table(raw$Police.Name))
 colnames(juris_conv) <- c("Department", "Convictions.Total")
 juris_conv <- juris_conv[order(-juris_conv$Convictions.Total),]
 
@@ -258,4 +259,56 @@ p <- ggplot() +
   labs(title="Number of convictions from Connecticut State Troopers", fill="")
 p
 ```
+It looks like Connecticut State Troop G is the most active when it comes to getting drug convictions. 
+That's interesting because it overlaps with some of the more active city police departments-- Bridgeport, Norwalk, and Stamford. According to [their map](http://www.ct.gov/despp/cwp/view.asp?a=4201&q=494682), CSP Troop G has jurisdiction in the south west corner of Connecticut (as indicated in the map above) but also patrols Interstate 95 from Greenwich to Branford.
+
+#### How do cities compare in convictions of Possession? 
+```{r results='asis',}
+d_only <- subset(raw, Final.Statute=="21a-279(d)")
+
+# Subset based on arresting agency
+juris_conv_d<- data.frame(table(d_only$Police.Name))
+colnames(juris_conv_d) <- c("Department", "Convictions.Total")
+juris_conv_d<- juris_conv_d[order(-juris_conv_d$Convictions.Total),]
+
+# subset out town police departments vs the rest
+towns_only_d <- juris_conv_d[grepl("LOCAL POLICE", juris_conv_d$Department),]
+not_towns_d <- juris_conv_d[grep("LOCAL POLICE", juris_conv_d$Department, invert=TRUE),]
+
+csp_only_d <- juris_conv_d[grepl("CSP TROOP", juris_conv_d$Department),]
+csp_only_d$Department <- as.character(csp_only_d$Department)
+csp_only_d$Department <- gsub("CSP TROOP ", "", csp_only_d$Department)
+colnames(csp_only_d) <- c("id", "Convictions")
+
+towns_only_d$Department <- as.character(towns_only_d$Department)
+towns_only_d$Department <- gsub("LOCAL POLICE ", "", towns_only_d$Department)
+colnames(towns_only_d) <- c("id", "Possession.Convictions")
+townpop_d <- read.csv("townsmap/townpopulation.csv")
+colnames(townpop_d) <- c("id","Population")
+townpop_d$id <- toupper(townpop_d$id)
+
+towns_only_d <- left_join(townpop_d, towns_only_d)
+towns_only_d$Possession.Convictions [is.na(towns_only_d$Possession.Convictions)] <-0
+towns_only_d$id <- stri_trans_general(towns_only_d$id, id="Title")
+towns_only_d$Per10kResidents <- (towns_only_d$Possession.Convictions/towns_only_d$Population)*10000
+towns_only_d$Per10kResidents <- round(towns_only_d$Per10kResidents, digits=2)
+towns_only_d <- towns_only_d[order(-towns_only_d$Per10kResidents),]
+kable(head(towns_only_d,10))
+```
+```{r results='asis', out.width='910px', fig.width=10, fig.height=4, warning=FALSE, message=FALSE, dpi=50}
+towntracts_d <- fortify(towntracts, region="NAME10")
+townData_d <- left_join(towntracts_d, towns_only_d)
+
+p2 <- ggplot() +
+  geom_polygon(data = townData_d, aes(x=long, y=lat, group=group, 
+                                    fill=Per10kResidents), color = "black", size=0.2) +
+  coord_map() +
+  scale_fill_distiller(type="seq", palette = "Greens", breaks=pretty_breaks(n=5)) +
+  theme_nothing(legend=TRUE) +
+  labs(title="Possessions convictions from city police departments per 10,000 residents", fill="")
+p2
+```
+The numbers shift around, although . Bridgeport and Stamford are not as high on the map. The highest rate of convictions that resulted in a Possession statute was in New Haven with almost two per 10,000 residents.
+
+
 
