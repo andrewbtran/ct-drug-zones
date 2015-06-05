@@ -1,5 +1,5 @@
 ---
-title: "Analysis of school drug zone arrests in Connecticut"
+title: "Analysis of school drug zone convictions in Connecticut"
 author: "Andrew Ba Tran"
 output: html_document
 ---
@@ -109,7 +109,7 @@ kable(convictions_table)
 
 #### As a percent of sentences
 
-```{r results='asis', out.width='910px', fig.width=10, fig.height=2, warning=FALSE, message=FALSE, dpi=50}
+```{r results='asis', out.width='910px', fig.width=10, fig.height=5, warning=FALSE, message=FALSE, dpi=50}
 percent_convictions <- round((convictions_table$Delivering/sum(convictions_table$Delivering))*100, digits=2)
 percent_convictions <- data.frame(percent_convictions)
 rownames(percent_convictions) <- c("Asian", "Black", "Hispanic", "Unlisted", "White")
@@ -313,7 +313,7 @@ The numbers shift around, although . Bridgeport and Stamford are not as high on 
 
 #### How has convictions evolved over time?
 
-```{r results='asis'}
+```{r results='asis', out.width='910px', fig.width=10, fig.height=5, warning=FALSE, message=FALSE, dpi=50}
 raw$Date <- mdy(raw$Sentenced)
 raw$Year <- year(raw$Date)
 
@@ -341,10 +341,19 @@ ggplot(meltedJoinsByYear, aes(x=Year, y=Convictions, colour=Final.Statute)) +
 
 ```
 
+#### How about as a percent of total convictions?
+
+```{r results='asis', out.width='910px', fig.width=10, fig.height=5, warning=FALSE, message=FALSE, dpi=50}
+raw$Date <- mdy(raw$Sentenced)
+raw$Year <- year(raw$Date)
+convictions_year <- data.frame(table(raw$Year,raw$Final.Statute))
+colnames(convictions_year) <- c("Year", "Statute", "Convictions")
+ggplot(convictions_year, aes(Year, Convictions, group=Statute, fill=Statute)) + geom_area(position="fill")
+
+```
+
 #### What's the breakdown for race per year by specific convictions? 
-
-```{r results='asis'}
-
+```{r results='asis', out.width='910px', fig.width=10, fig.height=5, warning=FALSE, message=FALSE, dpi=50}
 c_convictions_race <- table(conv_c$Year, conv_c$RaceOfConvicted)
 c_convictions_race <- data.frame(c_convictions_race)
 colnames(c_convictions_race) <- c("Year", "Race", "Convictions")
@@ -371,4 +380,46 @@ ggtitle("Race of those convicted for Possession by year") +
   theme_minimal()
 ```
 
+#### What's the racial breakdown for Possession convictions? 
+```{r results='asis', out.width='910px', fig.width=10, fig.height=5, warning=FALSE, message=FALSE, dpi=50}
+ggplot(d_convictions_race, aes(Year, Convictions, group=Race, fill=Race)) + geom_area(position="fill")
+```
+
+## What’s the racial breakdown in towns with the most Possession convictions?
+```{r results='asis', out.width='910px', fig.width=10, fig.height=5, warning=FALSE, message=FALSE, dpi=50}
+conv_d$Department <- as.character(conv_d$Police.Name)
+conv_d$Department <- gsub("LOCAL POLICE ", "", conv_d$Department)
+
+# New Haven
+conv_d_New.Haven <- subset(conv_d, Department=="NEW HAVEN")
+conv_d_New.Haven.year <- data.frame(table(conv_d_New.Haven$Year, conv_d_New.Haven$RaceOfConvicted))
+colnames(conv_d_New.Haven.year) <- c("Year", "Race", "Convictions")
+
+nh1 <- ggplot(conv_d_New.Haven.year, aes(Year, Convictions, group=Race, colour=Race)) +
+  geom_path(alpha=0.5) +
+ggtitle("Total") +
+  theme(legend.position="top")
+
+nh2 <- ggplot(conv_d_New.Haven.year, aes(Year, Convictions, group=Race, fill=Race)) + geom_area(position="fill") + 
+  ggtitle("Percent")  +
+  theme(legend.position="top")
+
+grid.arrange(nh1, nh2, ncol=2, main="Race of those convicted for Possession in New Haven")
+
+# Hartford
+conv_d_Hartford <- subset(conv_d, Department=="HARTFORD")
+conv_d_Hartford.year <- data.frame(table(conv_d_Hartford$Year, conv_d_Hartford$RaceOfConvicted))
+colnames(conv_d_Hartford.year) <- c("Year", "Race", "Convictions")
+
+nh1 <- ggplot(conv_d_Hartford.year, aes(Year, Convictions, group=Race, colour=Race)) +
+  geom_path(alpha=0.5) +
+ggtitle("Total") +
+  theme(legend.position="top")
+
+nh2 <- ggplot(conv_d_Hartford.year, aes(Year, Convictions, group=Race, fill=Race)) + geom_area(position="fill") + 
+  ggtitle("Percent")  +
+  theme(legend.position="top")
+
+grid.arrange(nh1, nh2, ncol=2, main="Race of those convicted for Possession in Hartford")
+```
 
