@@ -37,7 +37,10 @@ plot(year_convictions_race)
 
 
 # Subset based on Finding results
+convictions_year <- data.frame(table(raw$Year,raw$Final.Statute))
+colnames(convictions_year) <- c("Year", "Statute", "Convictions")
 
+ggplot(convictions_year, aes(Year, Convictions, group=Statute, fill=Statute)) + geom_area(position="fill")
 
 # Subset based on arresting agency
 juris_conv <- data.frame(table(raw$Police.Name))

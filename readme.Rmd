@@ -209,7 +209,7 @@ colnames(csp_only) <- c("id", "Convictions")
 towns_only$Department <- as.character(towns_only$Department)
 towns_only$Department <- gsub("LOCAL POLICE ", "", towns_only$Department)
 colnames(towns_only) <- c("id", "Convictions")
-ownpop <- read.csv("townsmap/townpopulation.csv")
+townpop <- read.csv("townsmap/townpopulation.csv")
 colnames(townpop) <- c("id","Population")
 townpop$id <- toupper(townpop$id)
 
