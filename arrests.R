@@ -5,6 +5,7 @@ arrests <- read.csv("arrests.csv")
 # Clean up the dates
 arrests$Date <- dmy(arrests$ARREST.DATE)
 arrests$Year <- year(arrests$Date)
+arrests$Year[arrests$Year==2099] <- 1999
 
 # Plot out year
 plot(table(arrests$Year))

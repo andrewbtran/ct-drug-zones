@@ -1,0 +1,150 @@
+---
+title: "Focusing on Possession"
+author: "Andrew Ba Tran"
+date: "June 5, 2015"
+output: html_document
+---
+
+
+```{r, echo=FALSE}
+require(lubridate)
+require(ggplot2)
+require(gridExtra)
+require(dplyr)
+require(tidyr)
+
+conv_new <- read.csv("convictionsnew.csv")
+arrests_new <- read.csv("arrestsnew.csv")
+
+conv_new$Sentenced <- as.character(conv_new$Sentenced)
+conv_new$Date <- mdy(conv_new$Sentenced)
+conv_new$Year <- year(conv_new$Date)
+conv_new$Year[conv_new$Year==2099] <- 1999
+
+arrests_new$ARREST.DATE <- as.character(arrests_new$ARREST.DATE)
+arrests_new$Date <- mdy(arrests_new$ARREST.DATE)
+arrests_new$Year <- year(arrests_new$Date)
+arrests_new$Year[arrests_new$Year==2099] <- 1999
+
+conv_new$RaceOf <- paste(conv_new$Race, conv_new$Hispanic, sep="")
+index <- c("", "A", "B", "BY", "C", "CY", "HY", "O", "OY")
+values <- c("Not Listed", "Asian", "Black", "Hispanic", "White", "Hispanic", "Hispanic", "Other", "Hispanic")
+conv_new$RaceOfConvicted <- values[match(conv_new$RaceOf, index)]
+```
+
+21a-279(d) is notable out of all the other possession charges in that it carries a minimum sentence of two years if charged. It's up to police to determine whether or not to charge a suspect with it but prosecutors might offer a plea deal to a subsection of the statute that does not have a minimum sentence.
+
+The court does not track at an aggregate level whether a charges were swapped out for lesser versions. 
+
+This analysis looks at the percent of **arrests** and with all subsections of statute 21a-279 and compares it to the **convictions** of the same subsections to see if the ratio changes significantly between.
+
+#### Before we start, it should be noted that the arrests data set has `r I(nrow(arrests_new))` observations and the convictions has a much lesser amount with `r I(nrow(conv_new))` because it does not count cases that were dismissed or found not guilty.
+
+#### What's the race breakdown for all Possession arrests and convictions?
+
+```{r results='asis', out.width='910px', fig.width=10, fig.height=10, warning=FALSE, message=FALSE, dpi=50}
+race_year_new <- data.frame(table(arrests_new$Year,arrests_new$Def_Race))
+
+colnames(race_year_new) <- c("Year", "Race", "Arrests")
+race_year_new$Race <- as.character(race_year_new$Race)
+race_year_new$Race <- gsub("^$", "Not Listed", race_year_new$Race)
+
+conv_year_new <- data.frame(table(conv_new$Year,conv_new$RaceOfConvicted))
+
+colnames(conv_year_new) <- c("Year", "Race", "Convictions")
+conv_year_new$Race <- as.character(conv_year_new$Race)
+
+
+p1 <- ggplot(race_year_new, aes(Year, Arrests, group=Race, colour=Race)) +
+  geom_path(alpha=0.5) +
+  ggtitle("Arrested") +
+    theme(legend.position="top")
+
+
+p2 <- ggplot(conv_year_new, aes(Year, Convictions, group=Race, colour=Race)) +
+  geom_path(alpha=0.5) +
+  ggtitle("Convicted") +
+    theme(legend.position="top")
+
+
+grid.arrange(p1, p2, ncol=1, main="Race of those arrested and convicted for Possession")
+
+  # And by percent
+p3 <- ggplot(race_year_new, aes(Year, Arrests, group=Race, fill=Race)) + geom_area(position="fill") +
+  ggtitle("Arrested") +
+    theme(legend.position="top")
+
+
+p4 <- 
+ggplot(conv_year_new, aes(Year, Convictions, group=Race, fill=Race)) + geom_area(position="fill") +
+  ggtitle("Convicted")+
+    theme(legend.position="top")
+
+
+grid.arrange(p3, p4, ncol=1, main="Percent of those arrested and convicted for Possession")
+
+```
+
+#### How has the arrest charges changed over time? 
+
+```{r, echo=FALSE, out.width='910px', fig.width=10, fig.height=10, warning=FALSE, message=FALSE, dpi=50}
+charges_year_new <- data.frame(table(arrests_new$Year,arrests_new$ORIGINAL.STATUTE))
+colnames(charges_year_new) <- c("Year", "Charge", "Arrests")
+conv_year_new <- data.frame(table(conv_new$Year,conv_new$Final.Statute))
+colnames(conv_year_new) <- c("Year", "Type", "Convictions")
+
+p5 <- ggplot(charges_year_new, aes(Year, Arrests, group=Charge, colour=Charge)) +
+  geom_path(alpha=0.5) +
+  ggtitle("Arrested") +
+      theme(legend.position="top")
+
+p6 <- ggplot(conv_year_new, aes(Year, Convictions, group=Type, colour=Type)) +
+  geom_path(alpha=0.5) +
+  ggtitle("Convicted") +
+      theme(legend.position="top")
+
+grid.arrange(p5, p6, ncol=1, main="Total Possession charges: Arrested and Convicted")
+
+p7 <- ggplot(charges_year_new, aes(Year, Arrests, group=Charge, fill=Charge)) + geom_area(position="fill") +
+  ggtitle("Arrested")+
+      theme(legend.position="top")
+
+
+p8 <- ggplot(conv_year_new, aes(Year, Convictions, group=Type, fill=Type)) + geom_area(position="fill") +
+  ggtitle("Convicted")+
+        theme(legend.position="top")
+
+grid.arrange(p7, p8, ncol=1, main="Percent of Possession charges: Arrested and Convicted")
+
+```
+
+#### All the subcharges of statute 21a-279 as a percent of total arrests and total convictions
+
+```{r, out.width='700px', fig.width=10, fig.height=10, warning=FALSE, message=FALSE, dpi=50}
+
+
+# charges as percent of all arrests
+
+arrests.charges <- data.frame(table(arrests_new$ORIGINAL.STATUTE))
+colnames(arrests.charges) <- c("Statute", "Arrest.Charge")
+arrests.charges$Arrest.Charge.Percent <- round((arrests.charges$Arrest.Charge/sum(arrests.charges$Arrest.Charge)*100), digits=2)
+arrests.charges <- subset(arrests.charges, (Statute=="21a-279(a)" | Statute=="21a-279(b)" | Statute=="21a-279(c)" | Statute=="21a-279(d)"))
+
+convictions.charges <- data.frame(table(conv_new$Final.Statute))
+colnames(convictions.charges) <- c("Statute", "Conviction.Charge")
+convictions.charges$Conviction.Charge.Percent <- round((convictions.charges$Conviction.Charge/sum(convictions.charges$Conviction.Charge)*100), digits=2)
+convictions.charges <- subset(convictions.charges, (Statute=="21a-279(a)" | Statute=="21a-279(b)" | Statute=="21a-279(c)" | Statute=="21a-279(d)"))
+                          
+charges_compare <- left_join(arrests.charges,convictions.charges)
+
+charges_comp <- charges_compare
+charges_comp$Arrest.Charge <- NULL
+charges_comp$Conviction.Charge <- NULL
+
+compared <- gather(charges_comp, "Type", "Percent", 2:3)
+
+ggplot(data=compared, aes(x=Type, y=Percent, fill=Statute)) + geom_bar(stat="identity") + ggtitle("Percent of subcharges for 21a-279: Arrests vs. Convictions ")
+
+```
+
+You can see how the percentage of **arrests** for Possession in a school zone (`r compared$Percent[4]`) went down as a percent of **convictions** with (`r compared$Percent[8]`). 
