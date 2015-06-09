@@ -1,6 +1,19 @@
 require(lubridate)
 
-arrests <- read.csv("arrests.csv")
+#arrests <- read.csv("arrests.csv")
+arrests <- read.csv("arrests_h.csv")
+
+#Clean up races
+#arrests$RaceOf <- paste(arrests$RACE, arrests$DEF_HISPANIC_IND, sep="")
+
+#index <- c("Asian", "AsianY", "Black", "BlackY", "HispY", "Native American", 
+           "Native AmericanY", "Not Identified", "White", "WhiteY")
+
+
+#values <- c("Asian", "Hispanic", "Black", "Hispanic", "Hispanic", "Native American", 
+            "Hispanic", "Not Identified", "White", "Hispanic")
+#arrests$Race <- values[match(arrests$RaceOf, index)]
+
 
 # Clean up the dates
 arrests$Date <- dmy(arrests$ARREST.DATE)

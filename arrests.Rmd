@@ -317,4 +317,82 @@ h2a <- ggplot(arrests_d_Norwalk.year, aes(Year, Arrests, group=Race, fill=Race))
 
 grid.arrange(h1a, nh2a, ncol=1, main="Race of those arrested for Possession in Norwalk")
 
+arrests_urban <- subset(arrests, (Town=="BRIDGEPORT" | Town=="HARTFORD" | Town=="NEW HAVEN" |
+                               Town=="NEW BRITAIN" | Town=="WEST HAVEN" | Town=="NEW LONDON" |
+                               Town=="WATERBURY" | Town=="NORWALK" | Town=="WATERBURY" |
+                               Town=="NORWALK" | Town=="ANSONIA" | Town=="STAMFORD"))
+
+arrests_urban.year <- data.frame(table(arrests_urban$Year, arrests_urban$RACE))
+colnames(arrests_urban.year) <- c("Year", "Race", "Arrests")
+
+adu1 <- ggplot(arrests_urban.year, aes(Year, Arrests, group=Race, colour=Race)) +
+  geom_path(alpha=0.5) +
+ggtitle("Total") +
+  theme(legend.position="top")
+
+adu2 <- ggplot(arrests_urban.year, aes(Year, Arrests, group=Race, fill=Race)) + geom_area(position="fill") + 
+  ggtitle("Percent")  +
+  theme(legend.position="top")
+
+grid.arrange(adu1, adu2, ncol=1, main="Race of those arrested in Urban towns")
+
+
+
+arrests_suburban <- subset(arrests, !(Town=="BRIDGEPORT" | Town=="HARTFORD" | Town=="NEW HAVEN" |
+                               Town=="NEW BRITAIN" | Town=="WEST HAVEN" | Town=="NEW LONDON" |
+                               Town=="WATERBURY" | Town=="NORWALK" | Town=="WATERBURY" |
+                               Town=="NORWALK" | Town=="ANSONIA" | Town=="STAMFORD"))
+
+arrests_suburban.year <- data.frame(table(arrests_suburban$Year, arrests_suburban$RACE))
+colnames(arrests_suburban.year) <- c("Year", "Race", "Arrests")
+
+ads1 <- ggplot(arrests_suburban.year, aes(Year, Arrests, group=Race, colour=Race)) +
+  geom_path(alpha=0.5) +
+ggtitle("Total") +
+  theme(legend.position="top")
+
+ads2 <- ggplot(arrests_suburban.year, aes(Year, Arrests, group=Race, fill=Race)) + geom_area(position="fill") + 
+  ggtitle("Percent")  +
+  theme(legend.position="top")
+
+grid.arrange(ads1, ads2, ncol=1, main="Race of those arrested in Suburban towns")
+
+
+arrests_d_urban <- subset(just_d, (Town=="BRIDGEPORT" | Town=="HARTFORD" | Town=="NEW HAVEN" |
+                               Town=="NEW BRITAIN" | Town=="WEST HAVEN" | Town=="NEW LONDON" |
+                               Town=="WATERBURY" | Town=="NORWALK" | Town=="WATERBURY" |
+                               Town=="NORWALK" | Town=="ANSONIA" | Town=="STAMFORD"))
+
+arrests_d_urban.year <- data.frame(table(arrests_d_urban$Year, arrests_d_urban$RACE))
+colnames(arrests_d_urban.year) <- c("Year", "Race", "Arrests")
+
+ady1 <- ggplot(arrests_d_urban.year, aes(Year, Arrests, group=Race, colour=Race)) +
+  geom_path(alpha=0.5) +
+ggtitle("Total") +
+  theme(legend.position="top")
+
+ady2 <- ggplot(arrests_d_urban.year, aes(Year, Arrests, group=Race, fill=Race)) + geom_area(position="fill") + 
+  ggtitle("Percent")  +
+  theme(legend.position="top")
+
+grid.arrange(ady1, ady2, ncol=1, main="Race of those arrested for Possession in Urban towns")
+
+arrests_d_suburban <- subset(just_d, !(Town=="BRIDGEPORT" | Town=="HARTFORD" | Town=="NEW HAVEN" |
+                               Town=="NEW BRITAIN" | Town=="WEST HAVEN" | Town=="NEW LONDON" |
+                               Town=="WATERBURY" | Town=="NORWALK" | Town=="WATERBURY" |
+                               Town=="NORWALK" | Town=="ANSONIA" | Town=="STAMFORD"))
+
+arrests_d_suburban.year <- data.frame(table(arrests_d_suburban$Year, arrests_d_suburban$RACE))
+colnames(arrests_d_suburban.year) <- c("Year", "Race", "Arrests")
+
+ady1 <- ggplot(arrests_d_suburban.year, aes(Year, Arrests, group=Race, colour=Race)) +
+  geom_path(alpha=0.5) +
+ggtitle("Total") +
+  theme(legend.position="top")
+
+ady2 <- ggplot(arrests_d_suburban.year, aes(Year, Arrests, group=Race, fill=Race)) + geom_area(position="fill") + 
+  ggtitle("Percent")  +
+  theme(legend.position="top")
+
+grid.arrange(ady1, ady2, ncol=1, main="Race of those arrested for Possession in Suburban towns")
 ```

@@ -32,7 +32,7 @@ This analysis was used for the story on TrendCT.org based on convictions data fr
 
 Under current law, a conviction of “Simple Possession” of drugs (21a-279(d)) within 1,500 feet of a school or day care center carries a mandatory minimum two year prison term. A conviction of “Possession with Intent to Sell” (21a-278(b)) drugs within 1,500 feet of a school, day care center, or public housing carries a mandatory minimum three year prison term.
 
-Governor Dannel Malloy has proposed Bill 952 to remove mandatory minimums for the possession of drugs (21a-279(d)) because he states that the two year mandatory prison sentence in urban areas "has had an extraordinarily impact" on African-American and Latino communities. Almost all of the area of New Haven, Hartford, Bridgeport and most other densely populated cities int he state are within a "school zone" while the vast majority of suburban towns are not.
+Governor Dannel Malloy has proposed Bill 952 to remove mandatory minimums for the possession of drugs (21a-279(d)) because he states that the two year mandatory prison sentence in urban areas "has had an extraordinarily impact" on African-American and Latino communities. Almost all of the area of New Haven, Hartford, Bridgeport and most other densely populated cities in the state are within a "school zone" while the vast majority of suburban towns are not.
 
 Earlier this month Malloy said 64 percent of those charged with drug possession in school zones are minorities, according to the Sentencing Commission. The Connecticut Judicial Branch could only provide raw data on convictions stretching back to 1999. We looked at data for the following conviction charges:
 
@@ -421,5 +421,71 @@ nh2 <- ggplot(conv_d_Hartford.year, aes(Year, Convictions, group=Race, fill=Race
   theme(legend.position="top")
 
 grid.arrange(nh1, nh2, ncol=2, main="Race of those convicted for Possession in Hartford")
+```
+
+#### Urban areas versus Suburban areas
+
+```{r results='asis', out.width='910px', fig.width=10, fig.height=5, warning=FALSE, message=FALSE, dpi=50}
+raw$Police.Name <- as.character(raw$Police.Name)
+towns_subset <- raw[grepl("LOCAL POLICE", raw$Police.Name),]
+towns_subset$Police.Name <- gsub("LOCAL POLICE ", "", towns_subset$Police.Name)
+
+urban_convictions <- subset(towns_subset, (Police.Name=="BRIDGEPORT" | Police.Name=="HARTFORD" | Police.Name=="NEW HAVEN" |
+                               Police.Name=="NEW BRITAIN" | Police.Name=="WEST HAVEN" | Police.Name=="NEW LONDON" |
+                               Police.Name=="WATERBURY" | Police.Name=="NORWALK" | Police.Name=="WATERBURY" |
+                               Police.Name=="NORWALK" | Police.Name=="ANSONIA" | Police.Name=="STAMFORD"))
+
+suburban_convictions <- subset(towns_subset, !(Police.Name=="BRIDGEPORT" | Police.Name=="HARTFORD" | Police.Name=="NEW HAVEN" |
+                                    Police.Name=="NEW BRITAIN" | Police.Name=="WEST HAVEN" | Police.Name=="NEW LONDON" |
+                                    Police.Name=="WATERBURY" | Police.Name=="NORWALK" | Police.Name=="WATERBURY" |
+                                    Police.Name=="NORWALK" | Police.Name=="ANSONIA" | Police.Name=="STAMFORD"))
+
+urban_conv_statute <- data.frame(table(urban_convictions$Year, urban_convictions$Final.Statute))
+colnames(urban_conv_statute) <- c("Year", "Statute", "Convictions")
+
+ucs1 <- ggplot(urban_conv_statute, aes(Year, Convictions, group=Statute, colour=Statute)) +
+  geom_path(alpha=0.5) +
+  ggtitle("Total") +
+  theme(legend.position="top")
+
+ucs2 <- ggplot(urban_conv_statute, aes(Year, Convictions, group=Statute, fill=Statute)) + geom_area(position="fill") + 
+  ggtitle("Percent")  +
+  theme(legend.position="top")
+
+grid.arrange(ucs1, ucs2, ncol=2, main="Types of convictions in Urban towns by year")
+
+
+suburban_conv_statute <- data.frame(table(suburban_convictions$Year, suburban_convictions$Final.Statute))
+colnames(suburban_conv_statute) <- c("Year", "Statute", "Convictions")
+
+scs1 <- ggplot(suburban_conv_statute, aes(Year, Convictions, group=Statute, colour=Statute)) +
+  geom_path(alpha=0.5) +
+  ggtitle("Total") +
+  theme(legend.position="top")
+
+scs2 <- ggplot(suburban_conv_statute, aes(Year, Convictions, group=Statute, fill=Statute)) + geom_area(position="fill") + 
+  ggtitle("Percent")  +
+  theme(legend.position="top")
+
+grid.arrange(scs1, scs2, ncol=2, main="Types of convictions in Suburban towns by year")
+
+```
+
+#### Convictions by race: Urban vs Suburban areas
+
+```{r results='asis', out.width='910px', fig.width=10, fig.height=5, warning=FALSE, message=FALSE, dpi=50}
+suburban_conv_race <- data.frame(table(suburban_convictions$Year, suburban_convictions$RaceOfConvicted))
+colnames(suburban_conv_race) <- c("Year", "Race", "Convictions")
+
+scr1 <- ggplot(suburban_conv_race, aes(Year, Convictions, group=Race, colour=Race)) +
+  geom_path(alpha=0.5) +
+  ggtitle("Total") +
+  theme(legend.position="top")
+
+scr2 <- ggplot(suburban_conv_race, aes(Year, Convictions, group=Race, fill=Race)) + geom_area(position="fill") + 
+  ggtitle("Percent")  +
+  theme(legend.position="top")
+
+grid.arrange(scr1, scr2, ncol=2, main="Race of those convicted in Suburban towns by year")
 ```
 
