@@ -7,7 +7,7 @@ output: html_document
 
 This documentation accompanies the TrendCT story: [Minorities were disproportionately charged for drug possession in urban Connecticut](http://trendct.org/2015/06/30/drug-free-school-zone-charges/).
 
-The analysis was based on arrests data from the Connecticut Judicial Branch. 
+The [analysis](http://trendct.github.io/ct-drug-zones/story1.html) was based on [arrests data](https://raw.githubusercontent.com/trendct/ct-drug-zones/master/data/original3.csv) from the Connecticut Judicial Branch. 
 
 ```{r, echo=FALSE, message=FALSE}
 require(lubridate)
@@ -175,7 +175,11 @@ grid.arrange(ady1, ady2, ncol=1, main="Race of those arrested for Possession in 
 
 ## Mapping out the buffer zones
 
-This spatial analysis was conducted in QGIS.
+This spatial analysis was conducted in QGIS. 
+
+We mapped this [list](https://github.com/trendct/ct-drug-zones/blob/master/unsorted/dataschoolsdaycares.csv) of schools and day care centers obtained from the state, added a buffer zone of 1,500 feet around each spot and merged the blobs.
+
+Then we calculated the area of each town and the area of the zones within each to find the percent makeup of each. Here's the [data](https://github.com/trendct/ct-drug-zones/blob/master/data/calculations.csv).
 
 ```{r, results='asis', out.width='910px', fig.width=10, fig.height=10, warning=FALSE, message=FALSE, dpi=50}
 townshapes <- readOGR(dsn="shapes", layer="finaltowns")
